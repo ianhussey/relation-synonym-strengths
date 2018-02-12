@@ -1,0 +1,17 @@
+﻿title: Batch script for IAT as an analogical task II
+author: Ian Hussey (ian.hussey@ugent.be)
+license: GPLv3+
+
+<batch>
+/ subjects=(1 of 2)
+/ file="demographics.iqx"
+/ file="categorisation_task_truth.iqx"
+/ file="categorisation_task_causality.iqx"
+</batch>
+
+<batch>
+/ subjects=(2 of 2)
+/ file="demographics.iqx"
+/ file="categorisation_task_causality.iqx"
+/ file="categorisation_task_truth.iqx"
+</batch>

@@ -1,0 +1,11 @@
+
+ Gender counts 
+# A tibble: 2 × 2
+  gender     n
+   <chr> <int>
+1      f    70
+2      m    23
+
+ age 
+     n  mean   sd
+age 93 21.29 2.43

@@ -1,0 +1,246 @@
+```{r}
+# title: summary table and plot
+# author: Ian Hussey (ian.hussey@ugent.be)
+# license: GPLv3+ 
+
+
+# dependencies ------------------------------------------------------------
+
+
+library(tidyverse)
+library(schoRsch)
+library(ez)
+library(gridExtra)  # for multiplots
+library(cowplot)  # for multiplots
+library(effsize)
+
+
+# data acquisition --------------------------------------------------------
+
+data <- 
+  read.csv("../data/processed/processed data - causality.csv") %>%
+  mutate(participant = as.factor(participant))
+
+data_outliers_removed <-
+  data %>%
+  filter(rt < 10000) %>%  # added due to extreme outlier of >1,000,000 ms
+  schoRsch::outlier(dv = "rt", 
+                    todo="elim", 
+                    upper.z = 2.5, 
+                    lower.z = -2.5)
+
+# check that what should be factors are indeed factors
+sapply(data, class)
+
+
+# plots -------------------------------------------------------------------
+
+
+# raw 
+plot(density(data$rt), col = "red")
+lines(density(data_outliers_removed$rt), col = "blue")
+# rescaled
+plot(density(data_outliers_removed$rt), col = "blue")
+
+
+# mean latencies ----------------------------------------------------------
+
+
+summary_table <- 
+  data_outliers_removed %>%
+  select(stimulus, rt) %>%
+  group_by(stimulus) %>%
+  summarize(M = round(mean(rt), 0),
+            SD = round(sd(rt), 0),
+            n = n(),
+            CI = round(1.96*SD/sqrt(n), 0),  # calculate 95% confidence intervals
+            CI_lower = M - CI,
+            CI_upper = M + CI) %>%
+  ungroup() %>%
+  arrange(M) %>%
+  rownames_to_column() %>%
+  rename(rank = rowname) %>%
+  mutate(rank = as.numeric(rank)) %>%
+  select(-n)
+
+summary_table %>% write.csv("summary table - causality.csv", row.names = FALSE)
+
+
+# plot --------------------------------------------------------------------
+
+
+# sort x axis by other variable (rank). solution here, don't understand why it works though:
+# http://stackoverflow.com/a/3744432
+summary_table <- transform(summary_table, stimulus = reorder(stimulus, -rank)) 
+
+# causes synonyms
+summary_table_cause <- 
+  summary_table %>%
+  filter(stimulus == "predicts" | 
+           stimulus == "results in" | 
+           stimulus == "produces" | 
+           stimulus == "leads to" | 
+           stimulus == "starts" | 
+           stimulus == "determines" | 
+           stimulus == "affects" | 
+           stimulus == "influences")
+
+# causes plot
+cause_plot <-
+  ggplot(summary_table_cause, 
+         aes(x = stimulus, y = M)) +
+  theme_minimal() +
+  scale_y_continuous(name = "Mean RT", limits = c(700, 1000), breaks = seq(700, 1000, 100), minor_breaks = NULL) +
+  xlab("Causes synonym") +
+  geom_point(size = 2, shape = 15) +
+  geom_errorbar(aes(ymin = CI_lower, ymax = CI_upper)) + # error bars are 85% CIs
+  coord_flip()
+
+
+# prevents synonyms
+summary_table_prevent <- 
+  summary_table %>%
+  filter(stimulus == "averts" | 
+           stimulus == "precludes" | 
+           stimulus == "halts" | 
+           stimulus == "avoids" | 
+           stimulus == "ends" | 
+           stimulus == "ceases" | 
+           stimulus == "blocks" | 
+           stimulus == "stops")
+
+# prevents plot
+prevent_plot <- 
+  ggplot(summary_table_prevent, 
+         aes(x = stimulus, y = M)) +
+  theme_minimal() +
+  scale_y_continuous(name = "Mean RT", limits = c(700, 1000), breaks = seq(700, 1000, 100), minor_breaks = NULL) +
+  xlab("Prevents synonym") +
+  geom_point(size = 2, shape = 15) +
+  geom_errorbar(aes(ymin = CI_lower, ymax = CI_upper)) + # error bars are 85% CIs
+  coord_flip()
+
+# combine plots
+cause_prevent_plot <- plot_grid(cause_plot, prevent_plot, ncol = 1, nrow = 2, align = 'v')
+
+# save
+ggsave("plot - cause-prevent synonyms.pdf",
+       device = "pdf",
+       plot = last_plot(),
+       width = 10,
+       height = 10,
+       units = "cm")
+
+
+# analyses ----------------------------------------------------------------
+
+
+# 1. synonym category differences 
+data_outliers_removed <- 
+  data_outliers_removed %>%
+  mutate(stimulus_category = as.factor(ifelse(stimulus == "predicts" | 
+                                               stimulus == "results in" | 
+                                               stimulus == "produces" | 
+                                               stimulus == "leads to" | 
+                                               stimulus == "starts" | 
+                                               stimulus == "determines" | 
+                                               stimulus == "affects" | 
+                                               stimulus == "influences",
+                                             "cause",
+                                             ifelse(stimulus == "averts" | 
+                                                      stimulus == "precludes" | 
+                                                      stimulus == "halts" | 
+                                                      stimulus == "avoids" | 
+                                                      stimulus == "ends" | 
+                                                      stimulus == "ceases" | 
+                                                      stimulus == "blocks" | 
+                                                      stimulus == "stops", 
+                                                    "prevent",
+                                                    NA))))
+
+
+# t test
+t_test_2 <- t.test(formula = rt ~ stimulus_category,
+                   data = data_outliers_removed,
+                   paired = FALSE)
+
+cohens_d_2 <- cohen.d(formula = rt ~ stimulus_category,
+                      data = data_outliers_removed,
+                      paired = FALSE)
+
+# save
+sink("ttest cause vs prevent.txt")
+t_test_2
+cohens_d_2
+sink()
+
+
+# 2. cause synonym differences
+data_outliers_removed_cause <- 
+  data_outliers_removed %>%
+  filter(stimulus == "predicts" | 
+           stimulus == "results in" | 
+           stimulus == "produces" | 
+           stimulus == "leads to" | 
+           stimulus == "starts" | 
+           stimulus == "determines" | 
+           stimulus == "affects" | 
+           stimulus == "influences")
+
+# within group anova comparing rts between stimuli exemplars 
+anova_3 <- ez::ezANOVA(data = data_outliers_removed_cause,
+                       dv = rt,
+                       within = stimulus,
+                       wid = participant,
+                       type = 1,
+                       detailed = TRUE)
+
+# summarise output
+anova_3_summary <- schoRsch::anova_out(anova_3, 
+                                       print = TRUE, 
+                                       sph.cor = "GG", 
+                                       mau.p = 0.05,
+                                       etasq = "partial", 
+                                       dfsep = ", ")
+
+# save
+sink("ANOVA cause synonyms.txt")
+anova_3_summary
+sink()
+
+
+# 3. false synonym differences
+data_outliers_removed_prevent <- 
+  data_outliers_removed %>%
+  filter(stimulus == "averts" | 
+           stimulus == "precludes" | 
+           stimulus == "halts" | 
+           stimulus == "avoids" | 
+           stimulus == "ends" | 
+           stimulus == "ceases" | 
+           stimulus == "blocks" | 
+           stimulus == "stops")
+
+# within group anova comparing rts between stimuli exemplars 
+anova_4 <- ez::ezANOVA(data = data_outliers_removed_prevent,
+                       dv = rt,
+                       within = stimulus,
+                       wid = participant,
+                       type = 1,
+                       detailed = TRUE)
+
+# summarise output
+anova_4_summary <- schoRsch::anova_out(anova_4, 
+                                       print = TRUE, 
+                                       sph.cor = "GG", 
+                                       mau.p = 0.05,
+                                       etasq = "partial", 
+                                       dfsep = ", ")
+
+
+# save
+sink("ANOVA prevent synonyms.txt")
+anova_4_summary
+sink()
+
+```

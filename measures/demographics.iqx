@@ -1,0 +1,100 @@
+﻿title: demographics
+author: Ian Hussey (ian.hussey@ugent.be)
+license: GPLv3+
+
+************************************************
+
+<defaults>
+/ canvassize = (800px, 600px)
+/ windowsize = (800px, 600px)
+/ screencolor = white
+/ txcolor = black
+/ fontstyle = ("Arial", 3%)
+/ inputdevice = keyboard
+/ validkeys = (" ", "t")
+/ halign = center
+/ Com1BaudRate = 9600
+</defaults>
+
+<expt>
+/ blocks = [1 = block1]
+</expt>
+
+<variables>
+/ group = (1 of 1) (block1 = demographics)
+</variables>
+
+************************************************
+Demographics
+************************************************
+
+<textbox age>
+/ caption = "What is your age:"
+</textbox>
+
+<textbox gender>
+/ caption = "What is your gender"
+</textbox>
+
+<textbox ProlificCode>
+/ caption = 
+"Please enter your prolific ID here. 
+It is available in the window that launched this study. 
+Please note that if you do not enter your code you may not be paid."
+/ position = (10%,10%)
+/ textboxsize = (45, 40)
+/ multiline = true
+</textbox>
+
+<surveypage info_1>
+/ questions = [1 = ProlificCode]
+/ showpagenumbers = false 
+/ showquestionnumbers = false
+</surveypage>
+
+<surveypage info_2>
+/ questions = [1 = age]
+/ showpagenumbers = false 
+/ showquestionnumbers = false
+</surveypage>
+
+<surveypage info_3>
+/ questions = [1 = gender]
+/ showpagenumbers = false 
+/ showquestionnumbers = false
+</surveypage>
+
+************************************************
+block
+************************************************
+
+<block demographics>
+/ preinstructions = (pre_instruct)
+/ postinstructions = (post_instruct)
+/ screencolor = white
+/ trials = [1 = info_1; 2 = info_2; 3 = info_3]
+</block>
+
+************************************************
+Instructions
+************************************************
+
+<instruct>  
+/ fontstyle = ("Arial", 3%)
+/ inputdevice = keyboard
+/ nextkey = (" ")
+/ nextlabel = "Press the spacebar to continue"
+/ prevlabel = "Press the 't' key to go back"
+/ prevkey = ("t")
+</instruct>
+
+<page pre_instruct>
+This study involves reaction time tasks that are sensitive to sources of distraction, which may make results uninterpretable.^^
+Before you begin, please silence or switch off your phone, alerts, music, tv, & anything else distracting.
+</page>
+
+<page post_instruct>
+Next you will do the reaction time tasks. These will take around two minutes in total.^^
+These will be presented in full screen mode. If you need to end the study early and exit full screen mode, you can press Ctrl-q several times. 
+Please note, however, that if you do not complete the tasks you will not be paid.
+</page>

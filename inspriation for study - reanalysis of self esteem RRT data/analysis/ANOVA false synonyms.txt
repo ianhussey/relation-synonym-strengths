@@ -1,0 +1,25 @@
+$`--- ANOVA RESULTS     ------------------------------------`
+       Effect       MSE df1 df2       F     p
+1 (Intercept) 79475.381   1  50 2192.02 0.000
+2    stimulus  3211.045   7 350    6.86 0.000
+  petasq getasq
+1   0.98   0.97
+2   0.12   0.03
+
+$`--- SPHERICITY TESTS  ------------------------------------`
+    Effect p_Mauchly GGEpsilon  p_GG HFEpsilon
+1 stimulus     0.000     0.692 0.000     0.775
+   p_HF
+1 0.000
+
+$`--- FORMATTED RESULTS ------------------------------------`
+       Effect
+1 (Intercept)
+2    stimulus
+                                     Text
+1  F(1,50) = 2192.02, p < .001, np2 = .98
+2 F(7,350) =    6.86, p < .001, np2 = .12
+
+$`NOTE:`
+[1] "p-values for the following effects were GG-adjusted (p_Mauchly <= 0.05): stimulus."
+

@@ -1,0 +1,156 @@
+---
+title: 'Relative speed of true vs false responding'
+author: "Ian Hussey"
+output:
+  pdf_document:
+    highlight: haddock
+---
+
+The true/false reaction time task presented one word on each screen and required participants to respond with True (right response key) if it was a synonym for true, or False (left response key) if it was a synonym for false. The true words were: right, valid, accurate, definite, confirm, sure, yes, correct, and true. The false words were: incorrect, invalid, deny, untrue, no, wrong, inexact, and inaccurate.
+
+Participants completed 3 blocks of 80 trials each. 
+
+# Descriptive statistics
+
+```{r acquire data, echo=FALSE, fig.height=5, fig.width=5, message=FALSE, warning=FALSE}
+# dependencies ------------------------------------------------------------
+
+
+library(tidyverse)
+library(schoRsch)
+library(ez)
+library(gridExtra)  # for multiplots
+library(cowplot)  # for multiplots
+library(effsize)
+library(knitr)
+library(plotrix)
+library(broom)
+
+
+# data acquisition --------------------------------------------------------
+
+
+data <- 
+  read.csv("../data/processed/processed data - truth.csv") %>%
+  mutate(participant = as.factor(participant)) %>%
+  schoRsch::outlier(dv = "rt", 
+                    todo="elim", 
+                    upper.limit = 10000, 
+                    lower.limit = 0,
+                    print.summary = FALSE) %>%
+  mutate(trialtype = as.factor(ifelse(stimulus == "right" | 
+                                        stimulus == "valid" | 
+                                        stimulus == "accurate" | 
+                                        stimulus == "definite" | 
+                                        stimulus == "confirm" | 
+                                        stimulus == "sure" | 
+                                        stimulus == "yes" | 
+                                        stimulus == "correct",
+                                      "true",
+                                      ifelse(stimulus == "incorrect" | 
+                                               stimulus == "invalid" | 
+                                               stimulus == "deny" | 
+                                               stimulus == "untrue" | 
+                                               stimulus == "no" | 
+                                               stimulus == "wrong" | 
+                                               stimulus == "inexact" | 
+                                               stimulus == "inaccurate", 
+                                             "false",
+                                             NA))))
+
+data %>%
+  group_by(participant) %>%
+  summarise(mean_rt = mean(rt),
+            accuracy = mean(accuracy),
+            age = max(age)) %>%
+  summarise(n = n(),
+            mean_age = round(mean(age), 2),
+            sd_age = round(sd(age), 2),
+            mean_rt = round(mean(mean_rt), 2),
+            sd_rt = round(sd(mean_rt), 2),
+            mean_accuracy = round(mean(accuracy), 2),
+            sd_accuracy = round(sd(accuracy), 2)) %>%
+  kable()
+```
+
+# Analysis
+
+Analyses examined whether participants were faster to categorise synonyms for true vs synonyms for false in order to assess for a general affirmation reaction time bias.
+
+```{r rt differences, echo=FALSE, fig.height=5, fig.width=5, message=FALSE, warning=FALSE}
+
+cohens_d_1 <- 
+  cohen.d(formula = rt ~ trialtype,
+          data = data,
+          paired = FALSE)
+
+cohens_d <- round(cohens_d_1$estimate, 2)
+cohens_d_lwr <- round(cohens_d_1$conf.int[1], 2)
+cohens_d_upr <- round(cohens_d_1$conf.int[2], 2)
+
+# t test
+ttest_rts <- 
+  t.test(formula = rt ~ trialtype,
+         data = data,
+         paired = FALSE) %>%
+  tidy() %>% 
+  mutate(statistic = round(statistic, 2),
+         diff = round(estimate1 - estimate2, 2),
+         parameter = round(parameter, 2),
+         conf.low = round(conf.low, 2),
+         conf.high = round(conf.high, 2),
+         p.value = ifelse(round(p.value, 4) < 0.001, "<.001", round(p.value, 4)),
+         output = paste("t(", parameter, ") = ", 
+                        statistic, ", p = ", p.value, 
+                        ", Mrt difference = ", diff, ", 95% CI [", 
+                        conf.low, ", ", conf.high, "], Cohen's d = ", cohens_d, ", 95% CI [", 
+                        cohens_d_lwr, ", ", cohens_d_upr, "]", sep = ""))
+```
+
+Two strategies were used. In both cases, reaction times > 10000 ms were trimmed as outliers (for parity with D scoring). First, reaction times were compared between the true versus false trials using an independant t test, `r ttest_rts %>% select(output) %>% as.character()`.
+
+```{r D score differences, echo=FALSE, fig.height=5, fig.width=5, message=FALSE, warning=FALSE}
+d1_scoring <- 
+  data %>%
+  group_by(participant) %>%
+  summarise(mean_rt_1 = mean(rt[trialtype == "true"]),
+            mean_rt_2 = mean(rt[trialtype == "false"]),
+            sd_rt = sd(rt),
+            D1 = (mean_rt_2 - mean_rt_1)/sd_rt,
+            zero = 0)
+
+# t test
+ttest_d_score <- 
+  t.test(d1_scoring$D1, mu=0) %>% 
+  tidy() %>% 
+  mutate(statistic = round(statistic, 2),
+         estimate = round(estimate, 2),
+         conf.low = round(conf.low, 2),
+         conf.high = round(conf.high, 2),
+         p.value = ifelse(round(p.value, 4) < 0.001, "<.001", round(p.value, 4)),
+         output = paste("t(", parameter, ") = ", 
+                        statistic, ", p = ", p.value, 
+                        ", mean D score = ", estimate, ", 95% CI [", 
+                        conf.low, ", ", conf.high, "]", sep = ""))
+
+# plot
+# d1_summary <- d1_scoring %>%
+#   summarise(mean_rt_true = round(mean(mean_rt_1), 2),
+#             mean_rt_false = round(mean(mean_rt_2), 2),
+#             mean_D1 = round(mean(D1), 2),
+#             CI_lower = round(mean_D1 - std.error(D1)*1.96, 2),
+#             CI_upper = round(mean_D1 + std.error(D1)*1.96, 2))
+#
+# ggplot(d1_summary, aes(x = as.factor(1), y = mean_D1)) +
+#   geom_linerange(aes(ymax = CI_upper,
+#                      ymin = CI_lower)) +
+#   geom_point(size = 2.5) +
+#   theme_classic() + 
+#   coord_cartesian(ylim = c(0, 0.2)) +
+#   xlab("True-False categorisations")
+```
+
+Second, for the sake of familiarity and to aid comparisons with analyses of IRAP data, reaction times on the true/false task were confered to D scores. These compared the relative speed of responding on True trials relative to False trials, with positive scores indicating faster responding for True. A one sample t test then these D scores against the zero point, `r ttest_d_score %>% select(output) %>% as.character()`.
+
+Results therefore support a bias towards affirmative (true) responding relative to rejection (false) responding.
+

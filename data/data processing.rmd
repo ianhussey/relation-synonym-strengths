@@ -1,0 +1,149 @@
+```{r}
+# process data
+
+# author: Ian Hussey (ian.hussey@ugent.be)
+# license: GPLv3+
+
+# Notes:
+# ProlificCode is used only to pay participants and must be deleted from 
+# all data files before raw data is posted online
+ 
+
+# Dependencies ------------------------------------------------------------
+
+
+library(plyr)
+library(tidyverse)
+library(data.table)
+library(schoRsch)
+library(psych)
+
+
+# Data acquisition and cleaning -------------------------------------------
+
+
+## Set the working directory
+setwd("raw data/")
+
+# Read all files with the .iqdat extension
+files <- list.files(pattern = "\\.csv$")  
+
+# Read these files sequentially into a single data frame
+input_df <- dplyr::tbl_df(plyr::rbind.fill(lapply(files, data.table::fread, header = TRUE)))  # tbl_df() requires dplyr, rbind.fill() requires plyr, fread requires data.table
+
+```
+
+
+```{r}
+
+# Make some variable names more transparent
+trimmed_df <- 
+  input_df %>%
+  dplyr::select(subject,
+                correct,
+                latency,
+                blockcode,
+                stimulusitem1,
+                trialcode,
+                response) %>%
+  dplyr::rename(participant = subject,
+                accuracy = correct,
+                rt = latency,
+                stimulus = stimulusitem1,
+                demographics_item = trialcode,
+                task = blockcode) %>%
+  dplyr::mutate(participant = as.numeric(participant))
+  
+# MANUAL INCLUSIONS HERE - ONLY THOSE WITH COMPLETE DATA
+inclusion_df <- read.csv("processed data/inclusion list.csv")
+
+cleaned_df <- dplyr::inner_join(trimmed_df, inclusion_df, by = "participant")
+
+
+# demographics and parameters  --------------------------------------------
+
+
+demo_temp_1_df <-
+  cleaned_df %>%
+  dplyr::group_by(participant) %>%
+  dplyr::filter(grepl("demographics", task),
+                demographics_item == "age") %>%  # filter rows where the block_name includes string
+  dplyr::rename(age = response) %>%
+  dplyr::mutate(age = as.numeric(age)) %>%
+  dplyr::select(participant, age) %>% # select only necessary columns
+  dplyr::distinct(participant, .keep_all = TRUE)
+
+demo_temp_2_df <-
+  cleaned_df %>%
+  dplyr::group_by(participant) %>%
+  dplyr::filter(grepl("demographics", task),
+                demographics_item == "gender") %>%  # filter rows where the block_name includes string
+  dplyr::rename(gender = response) %>%
+  dplyr::select(participant, gender) %>% # select only necessary columns
+  dplyr::distinct(participant, .keep_all = TRUE) %>%
+  dplyr::mutate(gender = tolower(gender),  # homogenise gender categories. first make lower case
+                gender = ifelse(gender == "f", "female",  # then convert abbreviations
+                                ifelse(gender == "m", "male", gender))) %>%
+  dplyr::left_join(demo_temp_1_df, by = "participant")
+
+demographics_df <-
+  cleaned_df %>%
+  dplyr::filter(grepl("demographics", task)) %>%
+  dplyr::distinct(participant) %>%
+  dplyr::group_by(participant) %>%
+  dplyr::left_join(demo_temp_2_df, by = "participant") %>%
+  dplyr::select(participant, age, gender) %>%
+  ungroup()
+
+
+# factor variables
+gender_counts <- demographics_df %>% count(gender)
+
+# all ps (after exclusions)
+age_distribution <- 
+  demographics_df %>% 
+  dplyr::select(age) %>%
+  psych::describe(fast = TRUE,  # subset of descriptive stats
+                  ranges = FALSE,
+                  trim = 0) %>%
+  dplyr::select(-vars, -se)
+
+
+sink("../analysis/descriptive statistics.txt")
+cat("\n Gender counts \n")
+gender_counts
+cat("\n age \n")
+age_distribution
+sink()
+
+
+# long format truth categorization task -----------------------------------
+
+
+truth_df <-  
+  cleaned_df %>%
+  dplyr::filter(task == "categorization_truth") %>%
+  dplyr::select(participant, 
+                accuracy,
+                rt,
+                stimulus) %>%
+  dplyr::left_join(demographics_df, by = "participant")
+
+truth_df %>% write.csv(file = "processed data/processed data - truth.csv", row.names = FALSE)
+
+
+# long format causality categorization task -------------------------------
+
+
+causality_df <-  
+  cleaned_df %>%
+  dplyr::filter(task == "categorization_causality") %>%
+  dplyr::select(participant, 
+                accuracy,
+                rt,
+                stimulus) %>%
+  dplyr::left_join(demographics_df, by = "participant")
+
+causality_df %>% write.csv(file = "processed data/processed data - causality.csv", row.names = FALSE)
+
+```

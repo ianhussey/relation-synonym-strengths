@@ -1,0 +1,171 @@
+﻿title: categorisation task
+author: Ian Hussey
+license: GPLv3+
+
+****************************************************
+stimuli
+****************************************************
+
+<item attributeAlabel>
+/1 = "True"
+</item>
+
+<item attributeA>
+/ 1 = "correct"
+/ 2 = "confirm"
+/ 3 = "right"
+/ 4 = "accurate"
+/ 5 = "yes"
+/ 6 = "valid"
+/ 7 = "definite"
+/ 8 = "sure"
+</item>
+
+<item attributeBlabel>
+/1 = "False"
+</item>
+
+<item attributeB>
+/ 1 = "incorrect"
+/ 2 = "deny"
+/ 3 = "wrong"
+/ 4 = "inaccurate"
+/ 5 = "no"
+/ 6 = "invalid"
+/ 7 = "inexact"
+/ 8 = "untrue"
+</item>
+
+****************************************************
+defaults
+****************************************************
+
+<defaults>
+/ fontstyle = ("Arial", 3.5%)
+/ screencolor = (0,0,0)
+/ txbgcolor = (0,0,0)
+/ txcolor = (255, 255, 255)
+/ minimumversion = "4.0.0.0"
+</defaults>
+
+****************************************************
+instructions
+****************************************************
+
+<trial instructions>
+/ stimulustimes = [1=instructions, spacebar]
+/ correctresponse = (" ")
+/ errormessage = false
+/ recorddata = false
+</trial>
+
+<text instructions>
+/ items = instructions
+/ hjustify = left
+/ size = (90%, 60%)
+/ position = (50%, 85%)
+/ valign = bottom
+/ select = sequence
+/ resetinterval = 20
+/ txcolor = orange
+</text>
+
+<item instructions>
+/ 1 = "
+TASK B - SYNONYMS FOR TRUE/FALSE
+
+Put your index fingers on the E and I keys. 
+
+Words will appear on the middle of the screen. Categorize them using the E key for categories on the left and I key for categories on the right. 
+
+If you make an error, an X will appear - hit the correct key to continue.
+
+This is a timed sorting task. GO AS FAST AS YOU CAN while making as few mistakes as possible. 
+
+This task will take about 1 minute to complete."
+</item>
+
+<text spacebar>
+/ items = ("Press the SPACE BAR to begin.")
+/ position = (50%, 95%)
+/ valign = bottom
+</text>
+
+<text attributeA>
+/ items = attributeA
+/ fontstyle = ("Arial", 5%)
+</text>
+
+<text attributeB>
+/ items = attributeB
+/ fontstyle = ("Arial", 5%)
+</text>
+
+<text error>
+/ position = (50%, 75%)
+/ items = ("X")
+/ color = (255, 0, 0)
+/ fontstyle = ("Arial", 10%, true)
+</text>
+
+<text attributeAright>
+/ items = attributeAlabel
+/ valign = top
+/ halign = right
+/ position = (95%, 5%)
+/ fontstyle = ("Arial", 5%)
+</text>
+
+<text attributeBleft>
+/ items = attributeBlabel
+/ valign = top
+/ halign = left
+/ position = (5%, 5%)
+/ fontstyle = ("Arial", 5%)
+</text>
+
+****************************************************
+trials
+****************************************************
+
+<trial attributeA>
+/ validresponse = ("E", "I")
+/ correctresponse = ("I")
+/ stimulusframes = [1 = attributeA]
+/ posttrialpause = 250
+</trial>
+
+<trial attributeB>
+/ validresponse = ("E", "I")
+/ correctresponse = ("E")
+/ stimulusframes = [1 = attributeB]
+/ posttrialpause = 250
+</trial>
+
+****************************************************
+blocks
+****************************************************
+
+<block categorization_truth>
+/ bgstim = (attributeAright, attributeBleft)
+/ trials = [1 = instructions; 2-81 = noreplace(attributeA, attributeA, attributeA, attributeA, attributeA, attributeA, attributeA, attributeA, 
+											   attributeB, attributeB, attributeB, attributeB, attributeB, attributeB, attributeB, attributeB)]
+/ errormessage = true(error,200)
+/ responsemode = correct
+</block>
+
+****************************************************
+experiment
+****************************************************
+
+<expt >
+/ blocks = [1 = categorization_truth; 2 = categorization_truth; 3 = categorization_truth]
+</expt>
+
+****************************************************
+test Monkey
+****************************************************
+<monkey>
+/ latencydistribution = normal(500, 100)
+/ percentcorrect = 90
+</monkey>
