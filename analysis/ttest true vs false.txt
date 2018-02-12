@@ -1,0 +1,19 @@
+
+	Welch Two Sample t-test
+
+data:  rt by stimulus_category
+t = 5.9737, df = 11972, p-value = 0.000000002385
+alternative hypothesis: true difference in means is not equal to 0
+95 percent confidence interval:
+ 14.09993 27.87240
+sample estimates:
+mean in group false  mean in group true 
+           649.5308            628.5447 
+
+
+Cohen's d
+
+d estimate: 0.1090325 (negligible)
+95 percent confidence interval:
+       inf        sup 
+0.07323604 0.14482902 

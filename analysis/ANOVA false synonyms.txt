@@ -1,0 +1,9 @@
+$`--- ANOVA RESULTS     ------------------------------------`
+
+$`--- SPHERICITY TESTS  ------------------------------------`
+
+$`--- FORMATTED RESULTS ------------------------------------`
+
+$`NOTE:`
+[1] "p-values for the following effects were GG-adjusted (p_Mauchly <= 0.05): stimulus."
+

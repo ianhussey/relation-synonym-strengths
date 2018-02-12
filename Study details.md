@@ -8,6 +8,10 @@ Licenses:
 
 ​	Other materials (data, plots, etc): CC-BY 4.0
 
+## Open Science Framework project
+
+For data, design, analyses etc. see http://osf.io/pq7aj
+
 ## Overview and purpose
 
 Determine which synonymns of true/false and causes/prevents can be categorised most quickly, and are therefore most suitable for inclusion in Relational Responding Task inducer trials. 
